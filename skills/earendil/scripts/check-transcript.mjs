@@ -62,6 +62,23 @@ export function similarity(a, b) {
 
 const hasDigit = (word) => /\d/.test(word);
 
+// number words of the languages the studio speaks most, as parts that join
+// into one word ("cento"+"sessanta"+"mila"), so "centosessantamila" reads as a number
+const NUMBER_PARTS = `zero un uno una due tre quattro cinque sei sette otto nove dieci undici dodici tredici quattordici quindici
+sedici diciassette diciotto diciannove venti vent trenta trent quaranta quarant cinquanta cinquant sessanta sessant settanta
+settant ottanta ottant novanta novant cento cent mille mila milione milioni miliardo miliardi
+one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen
+twenty thirty forty fifty sixty seventy eighty ninety hundred hundreds thousand thousands million millions billion billions
+dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince veinte veinti treinta cuarenta cincuenta
+sesenta setenta ochenta noventa cien ciento cientos mil millon millones
+deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze seize vingt trente quarante cinquante soixante cents
+eins zwei drei vier funf sechs sieben acht neun zehn elf zwolf zwanzig dreissig vierzig funfzig sechzig siebzig achtzig neunzig
+hundert tausend millionen`.split(/\s+/);
+const NUMBER_WORD = new RegExp(`^(?:${[...new Set(NUMBER_PARTS)].sort((a, b) => b.length - a.length).join("|")})+$`);
+const CONNECTORS = new Set(["e", "and", "y", "et", "und"]);
+
+export const isNumberWord = (word) => hasDigit(word) || NUMBER_WORD.test(word);
+
 /** Word-level alignment (weighted edit distance) of expected against heard. */
 export function align(expected, heard) {
   const n = expected.length;
@@ -100,12 +117,47 @@ export function align(expected, heard) {
 
 const round = (value) => Math.round(value * 1000) / 1000;
 
+/** A number can be written with digits on one side and in words on the other
+ *  ("7.160.000" against "sette milioni e centosessantamila"): the alignment
+ *  then sees one change plus a few missing or extra words. Folds those into
+ *  the change so the number is reported once, as a number. */
+export function mergeNumbers(ops) {
+  const token = (op) => (op.type === "missing" ? op.expected : op.type === "extra" ? op.heard : null);
+  const numberish = (op) => {
+    const t = token(op);
+    return Boolean(t) && (isNumberWord(t.word) || CONNECTORS.has(t.word));
+  };
+  const out = [];
+  for (let i = 0; i < ops.length; i += 1) {
+    const op = ops[i];
+    const numeric = op.type === "changed" && (hasDigit(op.expected.word) || hasDigit(op.heard.word));
+    if (!numeric) {
+      out.push(op);
+      continue;
+    }
+    const before = [];
+    while (out.length && numberish(out[out.length - 1])) before.unshift(out.pop());
+    const after = [];
+    while (i + 1 < ops.length && numberish(ops[i + 1])) after.push(ops[(i += 1)]);
+    const run = [...before, op, ...after];
+    const join = (side) => run.map((each) => each[side]).filter(Boolean);
+    const expected = join("expected");
+    const heard = join("heard");
+    out.push({
+      type: "changed",
+      expected: { raw: expected.map((t) => t.raw).filter((raw, k, all) => raw !== all[k - 1]).join(" "), word: expected.map((t) => t.word).join(" ") },
+      heard: { ...heard[0], raw: heard.map((t) => t.raw).filter((raw, k, all) => raw !== all[k - 1]).join(" "), word: heard.map((t) => t.word).join(" "), end: heard[heard.length - 1].end },
+    });
+  }
+  return out;
+}
+
 /** Turns the alignment into issues an agent can act on. Numbers spelled out
  *  ("80" heard as "ottanta") are reported as info, near misses ("carcare"
  *  heard as "calcare") as warnings to confirm with a narrow listen, extra and
  *  missing words as errors. */
 export function review(text, words) {
-  const ops = align(tokenize(text), heardTokens(words));
+  const ops = mergeNumbers(align(tokenize(text), heardTokens(words)));
   const issues = [];
   ops.forEach((op, index) => {
     if (op.type === "same") return;

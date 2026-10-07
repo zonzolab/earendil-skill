@@ -40,3 +40,16 @@ test("splits paragraphs, and long ones at sentence ends, without changing a word
   assert.deepEqual(splitScript(text, 20), ["Prima frase.", "Seconda frase lunga.", "Terzo paragrafo."]);
   assert.equal(splitScript(text, 20).join(" "), text.replace(/\n\n/, " "));
 });
+
+test("a number in digits against the same number in words is one info, whichever side has the digits", () => {
+  const text = "un intervento da sette milioni e centosessantamila euro finanziato";
+  const words = [["un", 1, 1.1], ["intervento", 1.2, 1.8], ["da", 1.9, 2], ["7.160.000", 2.1, 4.2], ["euro", 4.3, 4.6], ["finanziato", 4.7, 5.3]];
+  const report = review(text, words);
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.issues.map((issue) => [issue.severity, issue.type, issue.expected, issue.heard, issue.at]), [
+    ["info", "number", "sette milioni e centosessantamila", "7.160.000", [2.1, 4.2]],
+  ]);
+  const reverse = review("un museo di 70.000 metri quadrati", [["un", 0, 0.1], ["museo", 0.2, 0.6], ["di", 0.7, 0.8], ["settanta", 0.9, 1.3], ["mila", 1.3, 1.6], ["metri", 1.7, 2], ["quadrati", 2.1, 2.6]]);
+  assert.equal(reverse.ok, true);
+  assert.equal(reverse.issues.length, 1);
+});

@@ -66,7 +66,7 @@ Voices the user can use with an engine and language: their cloned voices (kind c
 
 ### `generate_speech`
 
-Generates a take from text (max 5000 characters) and places it on the timeline, by default appended at the end of the selected track. Generation consumes the user's monthly usage. For long narration generate one take per paragraph so each can be fixed alone.
+Generates a take from text (max 5000 characters) and places it on the timeline, by default appended at the end of the selected track. Generation consumes the user's monthly usage. For long narration generate one take per paragraph so each can be fixed alone. An expression colours the whole take: to change mood mid-paragraph, split it into takes.
 
 | Argument | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -76,7 +76,7 @@ Generates a take from text (max 5000 characters) and places it on the timeline, 
 | `language` | string | yes | Language code, e.g. it. |
 | `provider` | string |  | Speech engine (default soniox). |
 | `speed` | number |  | 0.7 to the engine's max_speed; 1 is natural. |
-| `expression` | `neutral` \| `happy` \| `sad` \| `angry` \| `excited` \| `calm` \| `whispering` \| `laughing` |  |  |
+| `expression` | `neutral` \| `happy` \| `sad` \| `angry` \| `excited` \| `calm` \| `whispering` \| `laughing` |  | Delivery of the whole take (default neutral). ElevenLabs switches to its expressive model for anything but neutral: language detected from the text, about twice the usage, timbre may shift slightly. |
 | `reduce_silence` | boolean |  | Soniox only: shorten long pauses inside the take. |
 | `name` | string |  | Label for the take (defaults to its first words). |
 | `place` | boolean |  | false keeps the take off the timeline (use place_take later). |
@@ -102,7 +102,7 @@ Places an existing take (again) on the timeline as a new clip.
 
 ### `listen`
 
-Listens to a stretch of the mix (max 240 seconds; default the whole timeline). A studio following in Agent mode really plays it and the call waits until playback ends. Returns a word-level transcript with timeline times, the pauses, and peak/RMS levels. Use it after every generation and edit.
+Listens to a stretch of the mix of every track (max 30 minutes per call; default the whole timeline). The answer carries the audio itself (16 kHz WAV, attached by default up to 60 s, on request up to 120 s) so you can hear and judge it, an audio_url for the same range at full quality, a word-level transcript with timeline times, the pauses and the levels. A studio following in Agent mode really plays it and the call waits until playback ends, for at most 240 s (then it returns with studio.still_playing_for while the studio keeps playing; wait false returns as soon as the analysis is ready). Use it after every generation and edit.
 
 | Argument | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -111,7 +111,8 @@ Listens to a stretch of the mix (max 240 seconds; default the whole timeline). A
 | `end` | number |  | To (default the end of the timeline). |
 | `clip_id` | string |  | Listen to exactly this clip instead of start/end. |
 | `track_ids` | string[] |  | Limit to these track ids. Omit for every track. |
-| `transcribe` | boolean |  | Default true. false skips the transcript (levels and pauses only). |
+| `transcribe` | boolean |  | Default true. false skips the transcript. |
+| `audio` | boolean |  | Attach the audio to the answer. Default true for ranges up to 60 s; allowed up to 120 s. |
 | `play` | boolean |  | Default true: play it in the following studio. |
 | `wait` | boolean |  | Default true: return when the studio finishes playing. |
 | `silence_db` | number |  | Pause threshold in dBFS (default -45). |
@@ -324,11 +325,14 @@ Renders the mix (or a range, or some tracks) to a 16-bit WAV and returns a downl
 | `end` | number |  | To (default the end). |
 | `track_ids` | string[] |  | Limit to these track ids. Omit for every track. |
 
+
 ## What `listen` returns
 
 ```json
 {
   "range": [26.388, 47.565],
+  "audio_attached": true,
+  "audio_url": "https://earendil.studio/api/agent/exports/….wav",
   "studio": { "connected": true, "project_id": "prj_…", "played": true },
   "clips": [{ "id": "clip_…", "track": "trk_…", "take": "ast_…", "start": 26.388, "end": 47.565 }],
   "transcript": {
@@ -342,6 +346,7 @@ Renders the mix (or a range, or some tracks) to a 16-bit WAV and returns a downl
 }
 ```
 
-- `studio.played` is true when a following studio really played the span; the call then returned when playback ended.
+- Next to this JSON the answer carries an MCP **audio** content block (`audio/wav`, 16 kHz mono) with exactly the range, attached by default up to 60 s and on request (`audio: true`) up to 120 s. `audio_url` serves the same range as a full-quality WAV for one hour.
+- `studio.played` is true when a following studio really played the span. The call returns when playback ends, or after 240 s of waiting with `studio.still_playing_for` (seconds left) while the studio keeps playing.
 - `transcript` is null with `transcribe: false`, and carries `error` instead of words when no transcription engine is configured.
 - `pauses` use `silence_db` (default -45 dBFS) and `min_pause` (default 0.3 s).

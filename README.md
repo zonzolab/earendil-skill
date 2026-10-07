@@ -1,6 +1,6 @@
 # Eärendil studio skill
 
-Let an AI agent produce narrated audio in [Eärendil studio](https://earendil.studio): audio guides, voice-overs, podcast segments, course narration. The agent generates speech, **listens back with word-level transcripts**, cuts, joins, moves and fades clips on the timeline, and exports the mix. With **Agent mode** switched on, your studio follows live: it opens the project the agent works on, shows every edit, and really plays what the agent listens to.
+Let an AI agent produce narrated audio in [Eärendil studio](https://earendil.studio): audio guides, voice-overs, podcast segments, course narration. The agent generates speech, **listens back**: it receives the audio itself to judge by ear, plus a word-level transcript with timings. It then cuts, joins, moves and fades clips on the timeline, and exports the mix. With **Agent mode** switched on, your studio follows live: it opens the project the agent works on, shows every edit, and really plays what the agent listens to.
 
 This repository contains:
 
@@ -43,11 +43,14 @@ The MCP server speaks Streamable HTTP at `https://earendil.studio/api/mcp` and a
     "earendil": {
       "type": "http",
       "url": "https://earendil.studio/api/mcp",
-      "headers": { "Authorization": "Bearer earendil_…" }
+      "headers": { "Authorization": "Bearer earendil_…" },
+      "timeout": 3600000
     }
   }
 }
 ```
+
+`timeout` (milliseconds, Claude Code) gives long listens and transcriptions room: `listen` waits for real-time playback.
 
 For clients that only run stdio servers, bridge with [`mcp-remote`](https://www.npmjs.com/package/mcp-remote):
 
@@ -80,7 +83,7 @@ Copy `skills/earendil/` wherever your agent loads skills from.
 | Projects | `list_projects`, `create_project`, `get_project`, `open_project`, `rename_project` |
 | Voices | `list_providers`, `list_voices` |
 | Speech | `generate_speech`, `place_take` |
-| Listening | `listen` (plays in your studio, returns transcript, pauses, levels), `play`, `stop`, `seek`, `studio_status` |
+| Listening | `listen` (plays in your studio and returns the audio itself, a full-quality link, a word-level transcript, pauses and levels), `play`, `stop`, `seek`, `studio_status` |
 | Editing | `cut_range`, `insert_silence`, `split`, `trim_clip`, `move_clips`, `delete_clips`, `arrange_track`, `set_fade`, `crossfade`, `set_clip_gain`, `group_clips` |
 | Tracks | `add_track`, `update_track`, `remove_track` |
 | Output | `undo`, `export_audio` |
