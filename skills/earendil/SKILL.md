@@ -47,7 +47,17 @@ If you can hear audio, listen to every take as a dialogue director would, and tr
 - **pace**: neither rushed nor dragging, breaths and pauses where a speaker would take them;
 - **sound**: clicks, glitches, cut breaths, abrupt starts and ends, a take louder or different-sounding from its neighbours.
 
-Each problem you hear has a time: take it from the transcript word nearest to it, then apply a recipe below. If you cannot hear audio, say so to the user once and judge from the transcript, pauses and levels (or hand `audio_url` to a tool that can listen); never claim you heard something you did not.
+Each problem you hear has a time: take it from the transcript word nearest to it, then apply a recipe below.
+
+### When you cannot hear audio
+
+Many agents receive the audio block but cannot listen to it. Say so to the user once, never claim you heard something you did not, and use the measurements instead. They cover most of what an ear catches:
+
+- `unclear_words` in `listen`: words the recogniser was unsure of (confidence under 0.6). An odd pronunciation, a mumbled or clipped word usually shows up here. Each one deserves a narrow re-listen and often a `redo_text`.
+- `delivery` in `listen` (spans up to 5 minutes), per sentence: `pace_syllables_per_s` (narration usually sits around 5–6.5), `pitch.median_hz`, `pitch.range_st` (spread in semitones: under about 3.5 sounds flat and read, above 13 overacted), `pitch.end` (statements should end `falling`; `rising` on a statement sounds like a question) and `loudness_db`. Per take: pitch and brightness against the other takes, so a take that sounds like another voice or mood stands out. Plain-language `notes` say what stands out; an empty list means nothing does.
+- `view_waveform` (spans up to 5 minutes) adds two panels you can look at: a 0–8 kHz **spectrogram** (bright vertical streaks are clicks; a hiss band high up is sibilance or a breath) and the **intonation** curve in yellow on a semitone scale (it should fall at the end of each statement; a curve that barely moves is a flat reading). Unclear words are labelled in red with `?`.
+
+Hand `audio_url` to the user when the final judgement needs a human ear (timbre, emotion), and ask them to listen to the spans you flag.
 
 ## Finding sentences and saying them again
 
@@ -90,6 +100,14 @@ Times come from `listen`: `transcript.words` are `[word, start, end]` on the tim
 3. Listen to the span again: the sentence must read as written.
 
 **Wrong word, mispronunciation, flat or odd delivery**: `redo_text` with words of the sentence as `query` (see above). If the same word fails twice, respell it with `text` (an accent mark such as "càrcare", a hyphen, or a number written out in words) and tell the user.
+
+**Delivery notes** from `listen`:
+- *rises at the end like a question* → `redo_text` the sentence; if it repeats, end it with a firmer full stop or use `expression: "calm"`.
+- *flat intonation* → `redo_text` with a livelier expression, or split a long sentence in two.
+- *faster/slower than the neighbouring sentences* → `redo_text` with `speed` nudged by 0.05–0.1 toward the others.
+- *louder/quieter than its neighbours* → `set_clip_gain` (each 6 dB is a factor of 2).
+- *voice higher/lower* or *brighter/darker timbre than the other takes* → that take sounds like another moment: redo its sentences, or the whole paragraph, with the same voice and settings.
+- An **unclear word** → re-listen to a narrow window; if it is unclear again, `redo_text` (respelling it if needed).
 
 **Near miss in the transcript** (the check reports a *warning*, e.g. "carcare" heard as "calcare"): transcription mishears rare words, place names and dialect terms, and leans towards the common word. Your ear decides: listen to that word in the attached audio. If you cannot hear audio, re-listen to a narrow window; when passes disagree, tell the user which word to check rather than regenerating blindly.
 

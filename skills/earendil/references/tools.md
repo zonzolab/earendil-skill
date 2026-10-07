@@ -145,7 +145,7 @@ Generates a sentence again and swaps it in: finds it (query, or start/end), rege
 
 ### `listen`
 
-Listens to a stretch of the mix of every track (max 30 minutes per call; default the whole timeline). The answer carries the audio itself (16 kHz WAV, attached by default up to 60 s, on request up to 120 s) so you can hear and judge it, an audio_url for the same range at full quality, a word-level transcript with timeline times, the pauses and the levels. A studio following in Agent mode really plays it and the call waits until playback ends, for at most 240 s (then it returns with studio.still_playing_for while the studio keeps playing; wait false returns as soon as the analysis is ready). Use it after every generation and edit.
+Listens to a stretch of the mix of every track (max 30 minutes per call; default the whole timeline). The answer carries the audio itself (16 kHz WAV, attached by default up to 60 s, on request up to 120 s) so you can hear and judge it, an audio_url for the same range at full quality, a word-level transcript with timeline times and the recogniser's confidence (unclear_words often mark an odd pronunciation), a delivery report (per sentence: pace, intonation range and ending, loudness; per take: pitch and timbre against the others, with notes), the pauses and the levels. A studio following in Agent mode really plays it and the call waits until playback ends, for at most 240 s (then it returns with studio.still_playing_for while the studio keeps playing; wait false returns as soon as the analysis is ready). Use it after every generation and edit.
 
 | Argument | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -156,6 +156,7 @@ Listens to a stretch of the mix of every track (max 30 minutes per call; default
 | `track_ids` | string[] |  | Limit to these track ids. Omit for every track. |
 | `transcribe` | boolean |  | Default true. false skips the transcript. |
 | `audio` | boolean |  | Attach the audio to the answer. Default true for ranges up to 60 s; allowed up to 120 s. |
+| `delivery` | boolean |  | Default true (spans up to 5 minutes): measure each sentence's pace, pitch and loudness and each take's voice against the others. |
 | `play` | boolean |  | Default true: play it in the following studio. |
 | `wait` | boolean |  | Default true: return when the studio finishes playing. |
 | `silence_db` | number |  | Pause threshold in dBFS (default -45). |
@@ -396,6 +397,12 @@ Renders the mix (or a range, or some tracks) to a 16-bit WAV and returns a downl
     "language": "it",
     "text": "Dagli anni '60 del Novecento, rovi e piante infestanti …",
     "words": [["Dagli", 26.45, 26.71], ["anni", 26.75, 26.98], ["'60", 27.02, 27.41]]
+  },
+  "unclear_words": [{ "word": "Vallata", "start": 0.93, "end": 1.23, "confidence": 0.48 }],
+  "delivery": {
+    "sentences": [{ "text": "Benvenuti nella Vallata Santa Domenica, …", "start": 0.09, "end": 6.81, "pace_syllables_per_s": 6.1,
+                    "pitch": { "median_hz": 135, "range_st": 7.8, "end_change_st": -3.1, "end": "falling" }, "loudness_db": -20.5, "notes": [] }],
+    "takes": [{ "clip": "clip_…", "take": "ast_…", "pitch_hz": 131, "brightness_hz": 1117, "loudness_db": -21, "notes": [] }]
   },
   "pauses": [[33.508, 33.998], [38.988, 39.598]],
   "levels": { "peak_db": -1, "rms_db": -22.5, "clipped_samples": 0 }
