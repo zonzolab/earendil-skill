@@ -1,0 +1,11 @@
+{
+  "name": "earendil-skill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agent skill and MCP setup for Eärendil studio.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "earendil": {
+      "type": "http",
+      "url": "${user_config.endpoint}/api/mcp",
+      "headers": { "Authorization": "Bearer ${user_config.api_key}" }
+    }
+  }
+}

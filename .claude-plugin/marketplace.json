@@ -1,0 +1,15 @@
+{
+  "name": "earendil",
+  "description": "Eärendil studio for agents: a skill and MCP server setup to produce and edit narrated audio.",
+  "owner": {
+    "name": "Zonzolab",
+    "url": "https://earendil.studio"
+  },
+  "plugins": [
+    {
+      "name": "earendil",
+      "source": "./",
+      "description": "Drive Eärendil studio from an agent: produce and edit narrated audio such as audio guides."
+    }
+  ]
+}

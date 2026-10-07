@@ -1,0 +1,26 @@
+{
+  "name": "earendil",
+  "displayName": "Eärendil studio",
+  "version": "1.0.0",
+  "description": "Turn scripts into finished narration in Eärendil studio: generate voices, listen with word-level transcripts, cut, join, move and fade on the timeline, export WAV.",
+  "author": { "name": "Zonzolab", "url": "https://earendil.studio" },
+  "homepage": "https://github.com/zonzolab/earendil-skill",
+  "repository": "https://github.com/zonzolab/earendil-skill",
+  "license": "MIT",
+  "keywords": ["audio", "voice", "tts", "audio-guide", "podcast", "mcp"],
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "Eärendil agent key",
+      "description": "Create it in the studio: Agent → Connect → Agent key. It starts with earendil_.",
+      "sensitive": true,
+      "required": true
+    },
+    "endpoint": {
+      "type": "string",
+      "title": "Studio URL",
+      "description": "Where your Eärendil studio runs.",
+      "default": "https://earendil.studio"
+    }
+  }
+}
