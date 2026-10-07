@@ -98,7 +98,50 @@ Places an existing take (again) on the timeline as a new clip.
 | `gap` | number |  | Pause before the take when appending at "end" (default 0.5). |
 | `ripple` | boolean |  | With a numeric `at`, push everything after `at` on that track right to make room (default false). |
 
-## Listen and transport
+## Script
+
+### `get_transcript`
+
+Every sentence of the script with the timeline seconds where it is said, from the takes' alignment (each take's text attached to its audio by transcription at generation; takes made in the studio are aligned the first time they are needed). words true adds every word.
+
+| Argument | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `project_id` | string | yes | Project id from list_projects or create_project. |
+| `start` | number |  | From (default 0). |
+| `end` | number |  | To (default the end). |
+| `clip_id` | string |  |  |
+| `words` | boolean |  | Include [word, start, end] for every word. |
+
+### `find_text`
+
+Finds where a phrase of the script is said: each match with the phrase's and its sentence's timeline seconds, best first. Spelling and accents need not be exact.
+
+| Argument | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `project_id` | string | yes | Project id from list_projects or create_project. |
+| `query` | string | yes | Words as they appear in the script. |
+
+### `redo_text`
+
+Generates a sentence again and swaps it in: finds it (query, or start/end), regenerates it with the same voice, language, speed and expression as its take unless overridden (text changes the wording or respells a word), cuts the old one at the quietest points around it and places the new one there, keeping the pauses, so the rest of the track only slides by the difference. scope phrase redoes only the matched words. Listen to the joins afterwards.
+
+| Argument | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `project_id` | string | yes | Project id from list_projects or create_project. |
+| `query` | string |  | Words of the sentence to redo. |
+| `occurrence` | integer |  | Which match, in timeline order, when the query matches several places. |
+| `scope` | `sentence` \| `phrase` |  | Redo the whole sentence (default) or only the matched words. |
+| `start` | number |  | Instead of query: redo the words between start… |
+| `end` | number |  | …and end. |
+| `track_id` | string |  | With start/end: the track (default the first). |
+| `text` | string |  | New wording; default the same words. |
+| `provider` | string |  |  |
+| `voice` | string |  |  |
+| `language` | string |  |  |
+| `speed` | number |  |  |
+| `expression` | `neutral` \| `happy` \| `sad` \| `angry` \| `excited` \| `calm` \| `whispering` \| `laughing` |  |  |
+
+## Listen, look and transport
 
 ### `listen`
 
@@ -117,6 +160,20 @@ Listens to a stretch of the mix of every track (max 30 minutes per call; default
 | `wait` | boolean |  | Default true: return when the studio finishes playing. |
 | `silence_db` | number |  | Pause threshold in dBFS (default -45). |
 | `min_pause` | number |  | Shortest pause reported (default 0.3). |
+
+### `view_waveform`
+
+Returns a PNG picture of a stretch of the timeline (default the whole of it; best under two minutes): the waveform of the mix with its pauses, the script words where they are said, suggested cut points and the clips with their fades per track. The JSON gives the same cut points (the quietest moment between two words), the word times and how to turn x pixels into seconds. Look before cutting or fading.
+
+| Argument | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `project_id` | string | yes | Project id from list_projects or create_project. |
+| `start` | number |  | From (default 0). |
+| `end` | number |  | To (default the end). |
+| `clip_id` | string |  | Look at exactly this clip instead of start/end. |
+| `track_ids` | string[] |  | Limit to these track ids. Omit for every track. |
+| `width` | integer |  | Picture width in pixels (default 1600). |
+| `words` | boolean |  | Label the script words (default true up to 120 s). |
 
 ### `play`
 
@@ -324,7 +381,6 @@ Renders the mix (or a range, or some tracks) to a 16-bit WAV and returns a downl
 | `start` | number |  | From (default 0). |
 | `end` | number |  | To (default the end). |
 | `track_ids` | string[] |  | Limit to these track ids. Omit for every track. |
-
 
 ## What `listen` returns
 

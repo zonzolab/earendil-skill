@@ -21,13 +21,13 @@ The tools come from the `earendil` MCP server. If they are missing, the server i
    `node scripts/split-script.mjs script.txt --max 600` prints the takes as a JSON array, words untouched.
 2. **Project**: `create_project` named after the stop or place (`"Vallata Santa Domenica — West entrance"`), first track `"Narration"`. Work in an existing project when the user names one (`list_projects`, then `get_project`).
 3. **Voice**: `list_voices` for the provider and language. Prefer the user's own voices (`kind: "custom"`): they are their brand. Otherwise pick a warm, steady narrator and name your choice. Keep provider, voice and speed identical for the whole guide so it sounds like one person; choose the expression per take (see *Expressions*).
-4. **Generate in order**: `generate_speech` once per take, appended with `at: "end"`, `gap: 0.8` (a breath between paragraphs). Give takes short names (`"1 · Welcome"`). Keep each result: the clip id and its start/end.
+4. **Generate in order**: `generate_speech` once per take, appended with `at: "end"`, `gap: 0.8` (a breath between paragraphs). Give takes short names (`"1 · Welcome"`). Each answer carries the clip and, under `alignment.sentences`, every sentence of the take with the timeline seconds where it is said: the server attaches the script to the audio right after generating it.
 5. **Listen to every take**: `listen` with `clip_id`, then judge it twice:
    - **By ear.** The answer carries the audio itself (see *Listening by ear*). Hear how it is said: stress, names, intonation, pace, glitches.
    - **Against the script.** Save the answer and compare the transcript with the take's text:
      `node scripts/check-transcript.mjs --text take.txt --heard listen.json`
      It prints extra, missing and changed words with timeline times, and a ready `cut_range` for extra words. Exit code 0 means the words are all there.
-6. **Fix** what the check reports (recipes below), then listen to the fixed span again.
+6. **Fix** what you heard or the check reports (recipes below), **looking before you cut**: `view_waveform` on the span shows where the words and the silences are. Then listen to the fixed span again.
 7. **Polish**: one pass of `listen` with `play: false, transcribe: false, min_pause: 0.7` over the whole timeline lists the long pauses and the levels in a second, without playing anything. Even out pauses, add a 20–50 ms `fade_in` on the first clip and a 0.5–1 s `fade_out` on the last.
 8. **Final listen**: play the whole guide through `listen` (up to 30 minutes per call), by ear and against the transcript one last time. This is the moment the user hears the result in their studio. A call waits for playback for at most 4 minutes: on a longer span it returns while the studio keeps playing and `studio.still_playing_for` says how long is left, so listen to long guides in spans of about 4 minutes to follow along.
 9. **Export**: `export_audio` returns a WAV link valid for one hour, for this exact version. Download it (`scripts/earendil.mjs download <url> guide.wav`) or hand the link to the user, with the duration and the fixes you made.
@@ -49,6 +49,29 @@ If you can hear audio, listen to every take as a dialogue director would, and tr
 
 Each problem you hear has a time: take it from the transcript word nearest to it, then apply a recipe below. If you cannot hear audio, say so to the user once and judge from the transcript, pauses and levels (or hand `audio_url` to a tool that can listen); never claim you heard something you did not.
 
+## Finding sentences and saying them again
+
+Every take's script is attached to the seconds where it is said, so you never have to guess times:
+
+- `get_transcript` lists the sentences on the timeline with their seconds (`words: true` adds every word). `complete: false` means part of the sentence was cut.
+- `find_text` tells where a phrase is said (spelling and accents need not be exact).
+- `redo_text` says a sentence again. When the user asks "say the sentence about the gardeners again", call `redo_text` with a few words of it as `query`. It regenerates the sentence with the same voice, language, speed and expression as before, cuts the old one at the quietest points around it and puts the new one in its place with the same pauses; the rest of the track slides by the difference. Then listen to the span it gives in `hint`.
+  - Several matches: pass `occurrence` (1 = the first in time).
+  - Only some words: `scope: "phrase"`, though a whole sentence usually sounds more natural.
+  - Change the wording or respell a word for the voice: `text` ("càrcare"). Change the delivery: `expression`, `speed`.
+  - Not in the script (an added aside): use `start`/`end` with `text`.
+
+## Looking at the waveform
+
+`view_waveform` returns a picture of a span of the timeline, best under two minutes, plus the same facts as JSON:
+
+- the waveform of the mix (red where it clips), pauses as green bands;
+- the script words under the waveform at their times;
+- **cut points** (orange dashed lines): between every two words, the quietest moment. The JSON gives each one's time and level: at −50 dBFS or below the cut is clean; around −30 dBFS the two words run into each other and a cut there will be heard, so cut elsewhere or let `redo_text` replace the whole sentence;
+- the clips of each track with their fades drawn as white diagonals.
+
+Use it before cutting (choose cut points, not guessed times), before fading (a fade must end in silence, not halfway through a word: check the diagonal against the words), and after an edit to check the result.
+
 ## Expressions
 
 `generate_speech` takes an `expression`: `neutral` (default), `calm`, `happy`, `excited`, `sad`, `angry`, `whispering`, `laughing`. It colours **the whole take**: the delivery cannot change halfway, so to change mood mid-paragraph, split the text into takes.
@@ -62,15 +85,11 @@ Each problem you hear has a time: take it from the transcript word nearest to it
 Times come from `listen`: `transcript.words` are `[word, start, end]` on the timeline, `pauses` are `[start, end]` silences.
 
 **Extra word, stumble or glitch** (e.g. "una discarica *ma* a cielo aperto"):
-1. Confirm with a narrow listen that starts at least 0.5 s before the word before it: `listen {start, end}` around 2–3 seconds. A window that starts mid-word produces junk at its edge, so ignore the first and last word of a narrow window.
-2. `cut_range` from just after the previous word to just before the next one (the check script prints it), `ripple: true` so the speech closes up. Cuts get 10 ms fades automatically, so they do not click.
+1. Confirm it: listen to a narrow window starting at least 0.5 s before the word before it (a window that starts mid-word produces junk at its edge), and `view_waveform` the same span.
+2. `cut_range` between the two cut points around it (or the cut the check script prints), `ripple: true` so the speech closes up. Cuts get 10 ms fades automatically, so they do not click.
 3. Listen to the span again: the sentence must read as written.
 
-**Wrong word or mispronunciation**:
-1. Regenerate only that sentence: `generate_speech` with `place: false`.
-2. Find the sentence span from the transcript (first word start to last word end; pauses mark sentence breaks).
-3. `cut_range` that span with `ripple: true`, then `place_take` the new take with `at` = the cut start and `ripple: true`: it opens exactly the room it needs.
-4. If the same word fails twice, respell it for the voice (an accent mark such as "càrcare", a hyphen, or a number written out in words) and tell the user.
+**Wrong word, mispronunciation, flat or odd delivery**: `redo_text` with words of the sentence as `query` (see above). If the same word fails twice, respell it with `text` (an accent mark such as "càrcare", a hyphen, or a number written out in words) and tell the user.
 
 **Near miss in the transcript** (the check reports a *warning*, e.g. "carcare" heard as "calcare"): transcription mishears rare words, place names and dialect terms, and leans towards the common word. Your ear decides: listen to that word in the attached audio. If you cannot hear audio, re-listen to a narrow window; when passes disagree, tell the user which word to check rather than regenerating blindly.
 
