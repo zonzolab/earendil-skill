@@ -86,7 +86,7 @@ Copy `skills/earendil/` wherever your agent loads skills from.
 | Script | `get_transcript` (every sentence with its seconds), `find_text`, `redo_text` ("say that sentence again": regenerates it and swaps it in, pauses kept) |
 | Listening and looking | `listen` (plays in your studio and returns the audio itself, a full-quality link, a word-level transcript with unclear words, a delivery report on pace, intonation and loudness, pauses and levels), `view_waveform` (a picture of the waveform, spectrogram and intonation with words, cut points and fades), `play`, `stop`, `seek`, `studio_status` |
 | Editing | `cut_range`, `insert_silence`, `split`, `trim_clip`, `move_clips`, `delete_clips`, `arrange_track`, `set_fade`, `crossfade`, `set_clip_gain`, `group_clips` |
-| Tracks | `add_track`, `update_track`, `remove_track` |
+| Tracks | `add_track`, `update_track`, `move_track`, `remove_track` |
 | Output | `undo`, `export_audio` |
 
 Full arguments: [`skills/earendil/references/tools.md`](skills/earendil/references/tools.md). A complete run on a real audio guide: [`references/audioguide-example.md`](skills/earendil/references/audioguide-example.md).

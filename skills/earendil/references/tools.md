@@ -353,6 +353,16 @@ Renames a track or changes its volume (0–1.5), mute or solo.
 | `muted` | boolean |  |  |
 | `solo` | boolean |  |  |
 
+### `move_track`
+
+Moves a track up or down the list: position 1 is the top. The other tracks keep their order; the clips stay on their track. Answers the new order.
+
+| Argument | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `project_id` | string | yes | Project id from list_projects or create_project. |
+| `track_id` | string | yes |  |
+| `position` | integer | yes | 1 for the top track, 2 for the one below, and so on; past the end means last. |
+
 ### `remove_track`
 
 Removes a track and its clips (takes stay in the project).
