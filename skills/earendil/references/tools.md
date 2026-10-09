@@ -21,7 +21,7 @@ Creates an empty project with one track and opens it in a following studio.
 
 ### `get_project`
 
-Returns the timeline: tracks, clips (start/end/offset/fades/gain/group, in seconds) and takes with their full text.
+Returns the timeline: tracks, clips (start/end/offset/fades/gain/group, in seconds) and takes with their full text. overlapping_clips lists clips stacked on one track, which sound together (not crossfades).
 
 | Argument | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -145,14 +145,14 @@ Generates a sentence again and swaps it in: finds it (query, or start/end), rege
 
 ### `listen`
 
-Listens to a stretch of the mix of every track (max 30 minutes per call; default the whole timeline). The answer carries the audio itself (16 kHz WAV, attached by default up to 60 s, on request up to 120 s) so you can hear and judge it, an audio_url for the same range at full quality, a word-level transcript with timeline times and the recogniser's confidence (unclear_words often mark an odd pronunciation), a delivery report (per sentence: pace, intonation range and ending, loudness; per take: pitch and timbre against the others, with notes), the pauses and the levels. A studio following in Agent mode really plays it and the call waits until playback ends, for at most 240 s (then it returns with studio.still_playing_for while the studio keeps playing; wait false returns as soon as the analysis is ready). Use it after every generation and edit.
+Listens to a stretch of the mix (max 30 minutes per call; default the whole timeline): the unmuted tracks (or the soloed ones), or only track_ids, or with clip_id one clip alone. `heard` says which, `clips` lists what sounded, and overlapping_clips flags clips stacked on one track (often an old take left under a new one). The answer carries the audio itself (16 kHz WAV, attached by default up to 60 s, on request up to 120 s) so you can hear and judge it, an audio_url for the same range at full quality, a word-level transcript with timeline times and the recogniser's confidence (unclear_words often mark an odd pronunciation), a delivery report (per sentence: pace, intonation range and ending, loudness; per take: pitch and timbre against the others, with notes), the pauses and the levels. A studio following in Agent mode really plays it and the call waits until playback ends, for at most 240 s (then it returns with studio.still_playing_for while the studio keeps playing; wait false returns as soon as the analysis is ready). Use it after every generation and edit.
 
 | Argument | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `project_id` | string | yes | Project id from list_projects or create_project. |
 | `start` | number |  | From (default 0). |
 | `end` | number |  | To (default the end of the timeline). |
-| `clip_id` | string |  | Listen to exactly this clip instead of start/end. |
+| `clip_id` | string |  | Listen to this clip alone, instead of start/end: nothing else sounds, not even other clips on its track, and it plays even when its track is muted. The way to check one take. |
 | `track_ids` | string[] |  | Limit to these track ids. Omit for every track. |
 | `transcribe` | boolean |  | Default true. false skips the transcript. |
 | `audio` | boolean |  | Attach the audio to the answer. Default true for ranges up to 60 s; allowed up to 120 s. |
@@ -171,7 +171,7 @@ Returns a PNG picture of a stretch of the timeline (default the whole of it; bes
 | `project_id` | string | yes | Project id from list_projects or create_project. |
 | `start` | number |  | From (default 0). |
 | `end` | number |  | To (default the end). |
-| `clip_id` | string |  | Look at exactly this clip instead of start/end. |
+| `clip_id` | string |  | Look at this clip alone, instead of start/end, as listen hears it with clip_id. |
 | `track_ids` | string[] |  | Limit to these track ids. Omit for every track. |
 | `width` | integer |  | Picture width in pixels (default 1600). |
 | `words` | boolean |  | Label the script words (default true up to 120 s). |
